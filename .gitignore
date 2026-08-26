@@ -10,3 +10,6 @@ uploads/
 .agents/
 .claude/
 .skills/
+
+# Ícones gerados a partir de icon.jpg por gera-icones.py; vivem no R2.
+icones/

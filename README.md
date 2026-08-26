@@ -18,6 +18,7 @@ _ds/organic-.../                        design system: styles.css + bundle
 assets/                                 fotos (fonte; publicadas no R2)
 build.mjs                               monta a pasta dist/
 sync-r2.mjs                             sobe assets/ para o bucket R2
+icon.jpg / gera-icones.py               logo e o script que gera os favicons
 supabase-cardapio.js                    cliente do banco (login + leitura/escrita)
 scroll-cardapio.js                      comportamento de rolagem (fora do componente)
 ```
@@ -72,6 +73,16 @@ npm run sync:midia
 
 Os arquivos são servidos com cache de um ano. Para trocar uma imagem existente,
 use um nome de arquivo novo — senão os navegadores continuam mostrando a antiga.
+
+### Ícones
+
+`gera-icones.py` recorta `icon.jpg` no emblema, aplica a máscara circular e
+gera os tamanhos; depois é só subir a pasta `icones/` para o bucket. O ícone do
+iOS sai quadrado e opaco de propósito: o iPhone recorta sozinho, e
+transparência ali vira fundo preto na tela de início.
+
+O bucket tem CORS liberado para o domínio do site porque o `site.webmanifest`
+aponta para ícones em outra origem, e o navegador busca esses com CORS.
 
 ## Deploy
 

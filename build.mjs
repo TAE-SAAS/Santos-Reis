@@ -20,8 +20,12 @@ const HEAD = `
 <meta name="description" content="Cardápio online do Pesqueiro Santos Reis: peixes, porções, almoço e bebidas. Consulte pratos e preços atualizados.">
 <meta name="theme-color" content="#201e1d">
 <link rel="preconnect" href="${MEDIA_URL.replace(/\/$/, '')}">
-<link rel="icon" href="${MEDIA_URL}menu-logo.png">
-<link rel="apple-touch-icon" href="${MEDIA_URL}menu-logo.png">
+<link rel="icon" href="${MEDIA_URL}favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="${MEDIA_URL}icone-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="${MEDIA_URL}icone-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="${MEDIA_URL}icone-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="${MEDIA_URL}icone-ios-180.png">
+<link rel="manifest" href="site.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Pesqueiro Santos Reis">
 <meta property="og:locale" content="pt_BR">
@@ -53,6 +57,22 @@ console.log(`${refs} referências de mídia apontadas para ${MEDIA_URL}`);
 
 // index.html porque o Cloudflare serve esse nome na raiz do site.
 await writeFile('dist/index.html', html);
+
+// Salvar o cardápio na tela de início do celular usa o manifest, não as tags
+// do head; sem ele o atalho sai com uma miniatura da página.
+await writeFile('dist/site.webmanifest', JSON.stringify({
+  name: 'Cardápio Pesqueiro Santos Reis',
+  short_name: 'Santos Reis',
+  start_url: '/',
+  display: 'standalone',
+  background_color: '#f5ead8',
+  theme_color: '#201e1d',
+  icons: [
+    { src: MEDIA_URL + 'icone-192.png', sizes: '192x192', type: 'image/png' },
+    { src: MEDIA_URL + 'icone-512.png', sizes: '512x512', type: 'image/png' },
+    { src: MEDIA_URL + 'icone-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+  ]
+}, null, 2));
 
 await cp('support.js', 'dist/support.js');
 await cp('supabase-cardapio.js', 'dist/supabase-cardapio.js');
