@@ -5,3 +5,8 @@ dist/
 # Arquivos de origem (PDF do cardápio e PNGs originais, ~16 MB).
 # Fora do repo porque ele é público e nada disso é usado pelo site.
 uploads/
+
+# Configuração de ferramentas locais, não faz parte do site.
+.agents/
+.claude/
+.skills/

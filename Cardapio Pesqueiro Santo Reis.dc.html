@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<script src="./supabase-cardapio.js"></script>
 </head>
 <body>
 <x-dc>
@@ -16,11 +17,31 @@ a{color:var(--color-accent);text-decoration:none}
 a:hover{color:var(--color-accent-700)}
 ::-webkit-scrollbar{width:0;height:0}
 @keyframes psrUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes psrGira{to{transform:rotate(360deg)}}
 </style>
 </helmet>
 
 <div style="min-height:100vh;display:flex;justify-content:center;background:var(--color-neutral-300)">
 <div style="width:100%;max-width:462px;background:var(--color-bg);box-shadow:var(--shadow-lg);min-height:100vh;overflow:hidden;position:relative">
+
+<sc-if value="{{ carregando }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;display:grid;place-items:center;padding:40px 24px;text-align:center">
+  <div>
+    <div style="width:34px;height:34px;border-radius:999px;border:3px solid var(--color-divider);border-top-color:var(--color-accent);margin:0 auto 14px;animation:psrGira .8s linear infinite"></div>
+    <div style="font:400 13px/1.5 var(--font-body);color:var(--color-neutral-600)">Carregando o cardápio…</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ temErroCarga }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;display:grid;place-items:center;padding:40px 24px;text-align:center">
+  <div>
+    <div style="font-family:var(--font-heading);font-size:22px;margin-bottom:6px">Cardápio indisponível</div>
+    <div style="font:400 13px/1.5 var(--font-body);color:var(--color-neutral-600);margin-bottom:16px">{{ erroCarga }}</div>
+    <button type="button" class="btn btn-primary" onClick="{{ recarregar }}">Tentar de novo</button>
+  </div>
+</div>
+</sc-if>
 
 <sc-if value="{{ isMenu }}" hint-placeholder-val="{{ true }}">
 <div>
@@ -35,14 +56,11 @@ a:hover{color:var(--color-accent-700)}
         {{ statusLabel }}
       </span>
       <div style="flex:1"></div>
-      <button type="button" onClick="{{ goAdmin }}" aria-label="Configurações do estabelecimento" style="width:38px;height:38px;border-radius:999px;border:1px solid rgba(249,244,237,.45);background:rgba(32,30,29,.42);color:#f9f4ed;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(6px)">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><path d="M4 6h10"></path><path d="M18 6h2"></path><path d="M4 12h4"></path><path d="M12 12h8"></path><path d="M4 18h10"></path><path d="M18 18h2"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="16" cy="18" r="2"></circle></svg>
-      </button>
     </div>
 
     <div style="position:absolute;left:0;right:0;bottom:0;padding:0 18px 20px">
-      <div style="font-family:var(--font-heading);font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:rgba(249,244,237,.8);margin-bottom:2px">Pesqueiro</div>
-      <div style="font-family:var(--font-heading);font-size:44px;line-height:.94;color:#f9f4ed;letter-spacing:-.02em">Santo Reis</div>
+      <div style="font-family:var(--font-heading);font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:rgba(249,244,237,.8);margin-bottom:2px">{{ heroSupra }}</div>
+      <div style="font-family:var(--font-heading);font-size:44px;line-height:.94;color:#f9f4ed;letter-spacing:-.02em">{{ heroNome }}</div>
       <div style="display:flex;align-items:center;gap:7px;margin-top:10px;font:600 12.5px/1.3 var(--font-body);color:rgba(249,244,237,.9)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5l3.5 2"></path></svg>
         {{ hoursLine }}
@@ -61,7 +79,7 @@ a:hover{color:var(--color-accent-700)}
     <div style="padding:14px 18px 10px;display:flex;gap:8px;align-items:center">
       <div style="position:relative;flex:1">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" style="position:absolute;left:13px;top:10px;color:var(--color-neutral-600)"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
-        <input class="input" type="search" placeholder="Buscar prato, bebida, porção…" value="{{ q }}" onInput="{{ onSearch }}" style="padding-left:38px;min-height:42px;font-size:14.5px;background:var(--color-neutral-100)">
+        <input class="input" type="search" placeholder="{{ buscaPlaceholder }}" value="{{ q }}" onInput="{{ onSearch }}" style="padding-left:38px;min-height:42px;font-size:14.5px;background:var(--color-neutral-100)">
       </div>
       <sc-if value="{{ searching }}" hint-placeholder-val="{{ false }}">
       <button type="button" class="btn btn-secondary" onClick="{{ clearSearch }}" style="min-height:42px;flex:none">Limpar</button>
@@ -76,8 +94,8 @@ a:hover{color:var(--color-accent-700)}
 
   <sc-if value="{{ showDestaques }}" hint-placeholder-val="{{ true }}">
   <div style="padding:20px 18px 4px">
-    <h3 style="margin:0 0 3px;font-size:26px">Mais pedidos</h3>
-    <div style="font:400 12.5px/1.4 var(--font-body);color:var(--color-neutral-600);margin-bottom:14px">O que sai mais da cozinha, escolhido pela casa.</div>
+    <h3 style="margin:0 0 3px;font-size:26px">{{ destaquesTitulo }}</h3>
+    <div style="font:400 12.5px/1.4 var(--font-body);color:var(--color-neutral-600);margin-bottom:14px">{{ destaquesSub }}</div>
 
     <sc-if value="{{ hasLead }}" hint-placeholder-val="{{ true }}">
     <div style="position:relative;border-radius:34px;overflow:hidden;height:232px;box-shadow:var(--shadow-md);animation:psrUp .34s ease both">
@@ -216,6 +234,15 @@ a:hover{color:var(--color-accent-700)}
       <a class="btn btn-secondary" href="https://www.facebook.com/pesqueirosantosreis" target="_blank" rel="noopener">/pesqueirosantosreis</a>
     </div>
     <div style="font:400 11px/1.5 var(--font-body);color:var(--color-neutral-500);margin-top:18px">Preços sujeitos a alteração · atualizado pelo próprio pesqueiro</div>
+
+    <sc-if value="{{ doCache }}" hint-placeholder-val="{{ false }}">
+    <div style="font:600 11px/1.5 var(--font-body);color:var(--color-accent-800);background:var(--color-accent-200);border-radius:12px;padding:7px 12px;margin-top:12px;display:inline-block">Sem conexão com o servidor — mostrando a última versão salva.</div>
+    </sc-if>
+
+    <button type="button" onClick="{{ goAdmin }}" style="margin-top:20px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--color-divider);background:transparent;color:var(--color-neutral-600);font:600 11.5px/1 var(--font-body);padding:9px 15px;border-radius:999px;cursor:pointer" style-hover="border-color:var(--color-accent-300);color:var(--color-accent-800)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+      {{ adminLabel }}
+    </button>
   </footer>
 </div>
 </sc-if>
@@ -254,9 +281,9 @@ a:hover{color:var(--color-accent-700)}
       <sc-if value="{{ loginErr }}" hint-placeholder-val="{{ false }}">
       <div style="font:600 12px/1.4 var(--font-body);color:var(--color-accent-800);background:var(--color-accent-200);border-radius:14px;padding:8px 12px">{{ loginErr }}</div>
       </sc-if>
-      <button type="button" class="btn btn-primary btn-block" onClick="{{ doLogin }}" style="min-height:42px">Entrar</button>
+      <button type="button" class="btn btn-primary btn-block" onClick="{{ doLogin }}" style="min-height:42px">{{ loginLabel }}</button>
       <div style="font:400 11.5px/1.5 var(--font-body);color:var(--color-neutral-600);border-top:1px solid var(--color-divider);padding-top:11px">
-        Autenticação de verdade fica para a próxima etapa — a tela e o fluxo já estão prontos, basta ligar no servidor.
+        As alterações valem para todo mundo que abrir o cardápio.
       </div>
     </div>
   </div>
@@ -280,6 +307,10 @@ a:hover{color:var(--color-accent-700)}
         </span>
         </sc-if>
       </div>
+
+      <sc-if value="{{ temErroSalvar }}" hint-placeholder-val="{{ false }}">
+      <div style="font:600 12px/1.4 var(--font-body);color:var(--color-accent-800);background:var(--color-accent-200);border-radius:14px;padding:10px 13px;margin-bottom:14px">{{ erroSalvar }}</div>
+      </sc-if>
 
       <sc-if value="{{ tabPrecos }}" hint-placeholder-val="{{ true }}">
       <div>
@@ -461,7 +492,7 @@ a:hover{color:var(--color-accent-700)}
       </sc-if>
 
       <div style="margin-top:26px;border-top:1px solid var(--color-divider);padding-top:16px;display:flex;gap:8px;align-items:center">
-        <button type="button" class="btn btn-secondary" onClick="{{ resetAll }}">Restaurar padrão</button>
+        <button type="button" class="btn btn-secondary" onClick="{{ recarregar }}">Recarregar do servidor</button>
         <div style="flex:1"></div>
         <button type="button" class="btn btn-primary" onClick="{{ goMenu }}">Ver cardápio</button>
       </div>
@@ -476,107 +507,18 @@ a:hover{color:var(--color-accent-700)}
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:462,&quot;height&quot;:900}}">
-const KEY = 'psr_cardapio_v1';
-
-const MENU = [
-  { id:'cerveja', name:'Cervejas e Chopp', photo:'assets/menu-cerveja.png', items:[
-    { name:'Antárctica Boa Garrafa', price:15.30, group:'Cervejas' },
-    { name:'Antárctica Boa Lata', price:8.30, group:'Cervejas' },
-    { name:'Skol Garrafa', price:15.80, group:'Cervejas' },
-    { name:'Skol Lata', price:8.30, group:'Cervejas' },
-    { name:'Brahma Garrafa', price:15.50, group:'Cervejas' },
-    { name:'Brahma Lata', price:8.30, group:'Cervejas' },
-    { name:'Heineken Garrafa', price:19.99, group:'Cervejas' },
-    { name:'Heineken Lata', price:9.99, group:'Cervejas' },
-    { name:'Original Garrafa', price:18.80, group:'Cervejas' },
-    { name:'Amstel Garrafa', price:14.80, group:'Cervejas' },
-    { name:'Brahma Zero Lata', price:8.50, group:'Sem álcool' },
-    { name:'Heineken Zero Lata', price:9.99, group:'Sem álcool' },
-    { name:'Soda Italiana', price:13.00, group:'Sem álcool', desc:'Vários sabores' },
-    { name:'Caipirinha', price:22.00, group:'Drinks' },
-    { name:'Kaipirosca', price:24.00, group:'Drinks' },
-    { name:'Saquerita', price:24.00, group:'Drinks' }
-  ]},
-  { id:'refri', name:'Refrigerantes e Sucos', photo:'assets/menu-refri.png', items:[
-    { name:'Coca-Cola Lata', price:7.99, group:'Latas' },
-    { name:'Coca-Cola Zero Lata', price:7.99, group:'Latas' },
-    { name:'Fanta Uva Lata', price:7.99, group:'Latas' },
-    { name:'Sprite Lata', price:7.99, group:'Latas' },
-    { name:'Guaraná Antárctica Lata', price:7.99, group:'Latas' },
-    { name:'Schweppes Lata', price:7.99, group:'Latas' },
-    { name:'Água Sem Gás', price:4.50, group:'Águas' },
-    { name:'Água Com Gás', price:4.50, group:'Águas' },
-    { name:'Água Tônica', price:8.50, group:'Águas' },
-    { name:'H2O', price:8.90, group:'Águas' },
-    { name:'Suco de Polpa 450 ml', price:9.90, group:'Sucos' },
-    { name:'Jarra de Suco 780 ml', price:18.00, group:'Sucos' }
-  ]},
-  { id:'peixe', name:'Porções de Peixe', photo:'assets/menu-file-tilapia.png', items:[
-    { name:'Filé de Tilápia', price:68.90, half:44.90, photo:'assets/menu-file-tilapia.png', sub:'A porção mais pedida da casa' },
-    { name:'Posta de Tilápia', price:64.90, half:42.90, photo:'assets/menu-file-tilapia.png', sub:'Posta frita na hora' },
-    { name:'Bolinho de Tilápia', price:39.90, photo:'assets/menu-bolinho.png', sub:'Bolinhos crocantes' },
-    { name:'Sashimi de Tilápia', price:49.00 },
-    { name:'Ceviche de Tilápia', price:49.00 },
-    { name:'Camarão Empanado c/ Catupiry', price:70.00, photo:'assets/menu-camarao.png', sub:'Recheado com Catupiry' },
-    { name:'Bolinho de Camarão', price:39.90, photo:'assets/menu-bolinho.png', sub:'Servido com molho da casa' }
-  ]},
-  { id:'fritas', name:'Porções Fritas', photo:'assets/menu-fritas-anel.png', items:[
-    { name:'Mandioca c/ Queijo e Bacon', price:49.90, half:39.90 },
-    { name:'Mandioca Frita', price:39.00, half:29.00 },
-    { name:'Batata c/ Queijo e Bacon', price:49.00, half:39.00, photo:'assets/menu-batata.png', sub:'Batata, queijo e bacon' },
-    { name:'Batata Frita', price:39.00, half:29.00 },
-    { name:'Anel de Cebola Frito', price:39.00, half:29.00, photo:'assets/menu-fritas-anel.png', sub:'Crocante, para dividir' }
-  ]},
-  { id:'frios', name:'Frios', photo:'assets/menu-frios-tabua.png', items:[
-    { name:'Tábua de Frios', price:89.90, desc:'Ovo de codorna, queijo, salame, azeitona, palmito e tomate', photo:'assets/menu-frios-tabua.png', sub:'Para a mesa inteira' },
-    { name:'Com Queijo', price:29.90, group:'Porções individuais' },
-    { name:'Com Salame', price:30.90, group:'Porções individuais' },
-    { name:'Com Palmito', price:30.90, group:'Porções individuais' },
-    { name:'Com Ovo de Codorna', price:29.90, group:'Porções individuais' },
-    { name:'Com Azeitona', price:29.90, group:'Porções individuais' },
-    { name:'Com Tomate', price:10.90, group:'Porções individuais' }
-  ]},
-  { id:'lacarte', name:'Almoço à La Carte', photo:'assets/menu-almoco-3.png', note:'Servido somente aos sábados e alguns feriados', items:[
-    { name:'Filé de Tilápia à Parmegiana', desc:'Acompanha arroz e batata palha', variants:[
-      { label:'1 pessoa', price:57.00 }, { label:'2 pessoas', price:99.90 }, { label:'3 pessoas', price:129.90 } ] },
-    { name:'Filé de Tilápia Frito', desc:'Acompanha arroz, batata e salada', price:119.90 },
-    { name:'Traíra Espalmada Tradicional', desc:'Acompanha arroz, batata e salada', price:129.90 },
-    { name:'Traíra à Parmegiana', desc:'Acompanha arroz e batata palha', price:134.90 },
-    { name:'Traíra Espalmada com Catupiry', desc:'Acompanha arroz, batata frita e salada', price:139.90 },
-    { name:'Arroz', price:17.00, group:'Itens à parte' },
-    { name:'Feijão', price:17.00, group:'Itens à parte' },
-    { name:'Salada', price:14.00, group:'Itens à parte' },
-    { name:'Batata palha', price:12.00, group:'Itens à parte' }
-  ]},
-  { id:'domingo', name:'Almoço de Domingo', photo:'assets/menu-almoco-1.png', note:'Self service servido somente aos domingos', items:[
-    { name:'Almoço self service', price:94.90, desc:'Cobrado por quilo', photo:'assets/menu-almoco-1.png', sub:'Buffet completo por kg' }
-  ]}
-];
 
 const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
+// Estado inicial enquanto o banco não respondeu. Os valores reais vêm da
+// tabela configuracao; isto só evita a tela quebrar no primeiro instante.
 const DEFAULTS = {
-  aviso: { on:true, text:'Camarão recheado com Catupiry saindo agora — peça na mesa!' },
-  avisoFim: { on:true, title:'Venha passar o dia com a gente', text:'Trilha das cachoeiras, pedalinho e pesque-pague — tudo no mesmo lugar.' },
-  cats: [],
-  days: ['Qui','Sex','Sáb','Dom'],
-  open: '08:00',
-  close: '18:00',
-  obs: 'Aberto também nos feriados. Sábado é almoço à la carte, domingo é self service por kg.',
-  featured: ['peixe-0','peixe-5','peixe-6','fritas-2','fritas-4','frios-0','cat:cerveja'],
-  prices: {},
-  removed: [],
-  added: []
+  aviso: { on:false, text:'' },
+  avisoFim: { on:false, title:'', text:'' },
+  cats: [], days: [], open: '08:00', close: '18:00', obs: '',
+  featured: [], prices: {}, removed: [], added: []
 };
 
-const INFOS = [
-  { n:'1', title:'Funcionamento', body:'Quinta-feira a domingo e feriados, das 8h às 18h. Porções do cardápio em todos os dias de funcionamento.' },
-  { n:'2', title:'Almoços', body:'Sábado: almoço à la carte. Domingo: self service por kg.' },
-  { n:'3', title:'Entrada e consumação', body:'Não cobramos entrada, somente consumação.' },
-  { n:'4', title:'Trilha das cachoeiras', body:'Trilha com duas cachoeiras. Consumindo no pesqueiro você não paga para ir às cachoeiras (consumo mínimo de R$ 10,00 por pessoa).' },
-  { n:'5', title:'Pesque-pague', body:'Tilápia a R$ 28,00 o kg sujo, mais R$ 3,00 o kg da limpeza. Varas, ração e massas por nossa conta.' },
-  { n:'6', title:'Passeio de pedalinho', body:'R$ 25,00 o passeio de 20 minutos: dois adultos e uma criança, um adulto e duas crianças, ou dois adultos.' }
-];
 
 const TABS = [
   { id:'precos', label:'Preços', title:'Preços do cardápio' },
@@ -591,22 +533,162 @@ class Component extends DCLogic {
     screen: 'menu', q: '', authed: false, user: '', pass: '', loginErr: '',
     tab: 'precos', saved: false, adminQ: '', showNewCat: false, newCatName: '',
     newCat: 'peixe', newName: '', newPrice: '',
+    menu: [], infos: [], textos: {}, carregando: true, erroCarga: '',
+    erroSalvar: '', entrando: false, doCache: false,
     cfg: DEFAULTS
   };
 
   componentDidMount() {
-    try {
-      const raw = window.localStorage.getItem(KEY);
-      if (raw) this.setState({ cfg: Object.assign({}, DEFAULTS, JSON.parse(raw)) });
-    } catch (e) {}
+    this.carrega();
+    if (window.PSR.logado()) {
+      window.PSR.eProprietario().then(ok => this.setState({ authed: ok }));
+    }
   }
 
+  carrega() {
+    this.setState({ carregando: true, erroCarga: '' });
+    return window.PSR.carregar().then(d => {
+      this.setState({
+        menu: d.menu, infos: d.infos, textos: d.textos, cfg: d.cfg,
+        carregando: false, doCache: !!d.doCache
+      });
+    }).catch(e => {
+      this.setState({ carregando: false, erroCarga: e.message || 'Não foi possível carregar o cardápio.' });
+    });
+  }
+
+  // Marca "salvo" na tela e avisa quando o banco recusou a gravação, para uma
+  // alteração nunca parecer aplicada sem ter sido.
+  concluiu(promessa) {
+    clearTimeout(this._t);
+    return promessa.then(() => {
+      this.setState({ saved: true, erroSalvar: '' });
+      this._t = setTimeout(() => this.setState({ saved: false }), 1600);
+    }).catch(e => {
+      this.setState({ saved: false, erroSalvar: e.message || 'Não foi possível salvar.' });
+    });
+  }
+
+  // Só a configuração da página passa por aqui; itens e preços têm métodos
+  // próprios, porque cada um grava numa tabela diferente.
   save(patch) {
     const cfg = Object.assign({}, this.state.cfg, patch);
-    this.setState({ cfg, saved: true });
-    try { window.localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {}
-    clearTimeout(this._t);
-    this._t = setTimeout(() => this.setState({ saved: false }), 1600);
+    this.setState({ cfg });
+    const col = {};
+    if ('open' in patch) col.abre = patch.open;
+    if ('close' in patch) col.fecha = patch.close;
+    if ('days' in patch) col.dias = patch.days;
+    if ('obs' in patch) col.observacao = patch.obs;
+    if ('aviso' in patch) { col.aviso_ativo = patch.aviso.on; col.aviso_texto = patch.aviso.text; }
+    if ('avisoFim' in patch) {
+      col.aviso_fim_ativo = patch.avisoFim.on;
+      col.aviso_fim_titulo = patch.avisoFim.title;
+      col.aviso_fim_texto = patch.avisoFim.text;
+    }
+    if (!Object.keys(col).length) return Promise.resolve();
+    return this.concluiu(window.PSR.gravar('PATCH', 'configuracao?id=eq.true', col));
+  }
+
+  // Localiza a linha do banco a partir do id posicional usado na tela.
+  acha(posId) {
+    let achado = null;
+    this.state.menu.forEach(c => c.items.forEach(i => { if (i.posId === posId) achado = i; }));
+    return achado;
+  }
+
+  // Troca o item por uma cópia alterada em vez de mexer no objeto no lugar:
+  // o framework compara referências e ignoraria uma mutação silenciosa, então
+  // o campo voltaria sozinho para o preço antigo.
+  trocaItem(posId, muda) {
+    this.setState({ menu: this.state.menu.map(c => Object.assign({}, c, {
+      items: c.items.map(i => i.posId === posId ? Object.assign({}, i, muda(i)) : i)
+    })) });
+  }
+
+  // O campo dispara a cada tecla. Sem esperar o dono parar de digitar, "16,40"
+  // viraria cinco gravações — e os valores intermediários (R$ 1,00) chegariam a
+  // ficar no ar para quem abrisse o cardápio naquele instante. Pior: as
+  // respostas podem voltar fora de ordem e o preço final não ser o digitado.
+  gravaPreco(posId, valor) {
+    const parte = posId.split('#');
+    const item = this.acha(parte[0]);
+    if (!item) return;
+
+    let alvo;
+    if (parte.length === 1) {
+      this.trocaItem(parte[0], () => ({ price: valor }));
+      alvo = ['itens?id=eq.' + item.dbId, { preco: valor }];
+    } else if (parte[1] === 'half') {
+      this.trocaItem(parte[0], () => ({ half: valor }));
+      alvo = ['itens?id=eq.' + item.dbId, { preco_meia: valor }];
+    } else {
+      const pos = Number(parte[1]);
+      const v = (item.variants || [])[pos];
+      if (!v) return;
+      this.trocaItem(parte[0], i => ({
+        variants: i.variants.map((x, k) => k === pos ? Object.assign({}, x, { price: valor }) : x)
+      }));
+      alvo = ['item_variacoes?id=eq.' + v.dbId, { preco: valor }];
+    }
+
+    this._precos = this._precos || {};
+    clearTimeout(this._precos[posId]);
+    this._precos[posId] = setTimeout(() => {
+      delete this._precos[posId];
+      this.concluiu(window.PSR.gravar('PATCH', alvo[0], alvo[1]));
+    }, 700);
+  }
+
+  // Esconder em vez de apagar: o dono consegue voltar atrás, e o histórico de
+  // preços do item continua de pé.
+  escondeItem(posId, esconder) {
+    const item = this.acha(posId);
+    if (!item) return;
+    this.trocaItem(posId, () => ({ visivel: !esconder }));
+    const cfg = this.state.cfg;
+    this.setState({ cfg: Object.assign({}, cfg, {
+      removed: esconder ? cfg.removed.concat([posId]) : cfg.removed.filter(x => x !== posId)
+    }) });
+    return this.concluiu(window.PSR.gravar('PATCH', 'itens?id=eq.' + item.dbId, { visivel: !esconder }));
+  }
+
+  criaItem(catId, nome, preco) {
+    const cat = this.state.menu.filter(c => c.id === catId)[0];
+    const ordem = cat ? cat.items.length : 0;
+    return this.concluiu(
+      window.PSR.gravar('POST', 'itens', { categoria_id: catId, nome, preco, ordem })
+        .then(() => this.carrega())
+    );
+  }
+
+  criaCategoria(id, nome) {
+    const ordem = this.state.menu.length;
+    return this.concluiu(
+      window.PSR.gravar('POST', 'categorias', { id, nome, ordem })
+        .then(() => this.carrega())
+    );
+  }
+
+  removeCategoria(catId) {
+    return this.concluiu(
+      window.PSR.gravar('DELETE', 'categorias?id=eq.' + catId).then(() => this.carrega())
+    );
+  }
+
+  // Regrava a lista inteira: são poucas linhas e evita ter de descobrir qual
+  // destaque saiu e qual entrou.
+  gravaDestaques(lista) {
+    const cfg = this.state.cfg;
+    this.setState({ cfg: Object.assign({}, cfg, { featured: lista }) });
+    // Toda linha leva as duas colunas, mesmo nulas: num lote, o PostgREST
+    // exige que os objetos tenham exatamente as mesmas chaves.
+    const linhas = lista.map((fid, i) => {
+      if (fid.indexOf('cat:') === 0) return { item_id: null, categoria_id: fid.slice(4), ordem: i };
+      const item = this.acha(fid);
+      return item ? { item_id: item.dbId, categoria_id: null, ordem: i } : null;
+    }).filter(Boolean);
+    // Uma chamada só: a função no banco troca a lista inteira numa transação.
+    return this.concluiu(window.PSR.gravar('POST', 'rpc/definir_destaques', { lista: linhas }));
   }
 
   fold(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
@@ -614,39 +696,25 @@ class Component extends DCLogic {
   num(n) { return Number(n).toFixed(2).replace('.', ','); }
   parse(s) { const n = parseFloat(String(s).replace(/[^\d,.-]/g, '').replace(',', '.')); return isFinite(n) ? n : null; }
 
-  // Built-in sections plus any the owner created.
+  // As seções vêm do banco; categorias criadas pelo dono já chegam junto.
   allCats() {
-    const custom = (this.state.cfg.cats || []).map(c => ({ id:c.id, name:c.name, photo:'', custom:true, items:[] }));
-    return MENU.concat(custom);
+    return this.state.menu;
   }
 
-  // Flat, id-stable view of the menu with overrides applied.
+  // Visão plana do cardápio, sem os itens que o dono escondeu.
   flat() {
     const cfg = this.state.cfg;
     const out = [];
-    MENU.forEach(cat => {
-      cat.items.forEach((it, i) => {
-        const id = cat.id + '-' + i;
-        if (cfg.removed.indexOf(id) > -1) return;
-        const p = cfg.prices[id];
-        const ph = cfg.prices[id + '#half'];
+    this.state.menu.forEach(cat => {
+      cat.items.forEach(it => {
+        if (cfg.removed.indexOf(it.posId) > -1) return;
         out.push(Object.assign({}, it, {
-          id, catId: cat.id, catName: cat.name,
-          half: it.half != null ? (ph != null ? ph : it.half) : null,
-          price: it.price != null ? (p != null ? p : it.price) : null,
-          variants: it.variants ? it.variants.map((v, vi) => {
-            const vp = cfg.prices[id + '#' + vi];
-            return { label: v.label, price: vp != null ? vp : v.price, vid: id + '#' + vi };
-          }) : null
+          id: it.posId, catId: cat.id, catName: cat.name,
+          variants: it.variants ? it.variants.map((v, vi) => ({
+            label: v.label, price: v.price, vid: it.posId + '#' + vi
+          })) : null
         }));
       });
-    });
-    const all = this.allCats();
-    (cfg.added || []).forEach(a => {
-      if (cfg.removed.indexOf(a.id) > -1) return;
-      const cat = all.filter(c => c.id === a.catId)[0] || all[0];
-      const p = cfg.prices[a.id];
-      out.push({ id:a.id, catId:cat.id, catName:cat.name, name:a.name, price:p != null ? p : a.price, variants:null, half:null });
     });
     return out;
   }
@@ -690,7 +758,7 @@ class Component extends DCLogic {
 
     const destaques = (cfg.featured || []).map((fid, i) => {
       if (fid.indexOf('cat:') === 0) {
-        const cat = MENU.filter(c => c.id === fid.slice(4))[0];
+        const cat = s.menu.filter(c => c.id === fid.slice(4))[0];
         if (!cat) return null;
         return { rank:'#' + (i + 1), name:cat.name, sub:'Garrafa, lata e sem álcool', price:'desde R$ 8,30', photoStyle:tile(cat.photo), hasPhoto:true, noPhoto:false };
       }
@@ -703,15 +771,15 @@ class Component extends DCLogic {
       };
     }).filter(Boolean);
 
-    const chips = MENU.filter(cat => shown.some(it => it.catId === cat.id))
+    const chips = s.menu.filter(cat => shown.some(it => it.catId === cat.id))
       .map(cat => ({ name:cat.name, go:() => self.jump('sec-' + cat.id) }))
       .concat([{ name:'Informações', go:() => self.jump('informacoes') }]);
 
-    const setPrice = (key, raw) => { const n = self.parse(raw); if (n != null) self.save({ prices: Object.assign({}, cfg.prices, { [key]: n }) }); };
+    const setPrice = (key, raw) => { const n = self.parse(raw); if (n != null) self.gravaPreco(key, n); };
 
     const editRows = items.map(it => ({
       name: it.name, catName: it.catName, money: it.price != null ? self.money(it.price) : self.money(it.variants[0].price),
-      onRemove: () => self.save({ removed: cfg.removed.concat([it.id]) })
+      onRemove: () => self.escondeItem(it.id, true)
     }));
 
     const aq = this.fold(s.adminQ.trim());
@@ -740,21 +808,17 @@ class Component extends DCLogic {
       return {
         name: cat.name, count: rows.length ? String(rows.length) : 'vazia', rows,
         custom: !!cat.custom,
-        onRemove: () => self.save({
-          cats: (cfg.cats || []).filter(c => c.id !== cat.id),
-          added: (cfg.added || []).filter(a => a.catId !== cat.id)
-        })
+        onRemove: () => self.removeCategoria(cat.id)
       };
     }).filter(Boolean);
 
     const removedRows = cfg.removed.map(id => {
       let name = id;
-      MENU.forEach(c => c.items.forEach((it, i) => { if (c.id + '-' + i === id) name = it.name; }));
-      (cfg.added || []).forEach(a => { if (a.id === id) name = a.name; });
-      return { name, onRestore: () => self.save({ removed: cfg.removed.filter(x => x !== id) }) };
+      s.menu.forEach(c => c.items.forEach(it => { if (it.posId === id) name = it.name; }));
+      return { name, onRestore: () => self.escondeItem(id, false) };
     });
 
-    const featRows = [{ id:'cat:cerveja', name:'Cerveja gelada (seção)' }]
+    const featRows = s.menu.map(c => ({ id:'cat:' + c.id, name:c.name + ' (seção)' }))
       .concat(items.map(it => ({ id:it.id, name:it.name })))
       .map(r => {
         const on = (cfg.featured || []).indexOf(r.id) > -1;
@@ -762,7 +826,7 @@ class Component extends DCLogic {
           name: r.name, mark: on ? '★' : '☆',
           bg: on ? 'var(--color-accent-200)' : 'var(--color-neutral-200)',
           fg: on ? 'var(--color-accent-800)' : 'var(--color-neutral-700)',
-          onToggle: () => self.save({ featured: on ? cfg.featured.filter(x => x !== r.id) : cfg.featured.concat([r.id]) })
+          onToggle: () => self.gravaDestaques(on ? cfg.featured.filter(x => x !== r.id) : cfg.featured.concat([r.id]))
         };
       });
 
@@ -791,7 +855,10 @@ class Component extends DCLogic {
     const fim = cfg.avisoFim || DEFAULTS.avisoFim;
 
     return {
-      isMenu: s.screen === 'menu', isAdmin: s.screen === 'admin',
+      // Enquanto carrega (ou se falhou), a tela do cardápio fica fora para não
+      // aparecer junto com o aviso.
+      isMenu: s.screen === 'menu' && !s.carregando && !s.erroCarga,
+      isAdmin: s.screen === 'admin' && !s.carregando,
       q: s.q, searching: !!q, noResults: !!q && !cats.length,
       showDestaques: !q && destaques.length > 0,
       statusLabel: isOpen ? 'Aberto agora' : (openToday ? 'Fechado agora' : 'Abre ' + nextDay.toLowerCase() + ' às ' + hh(cfg.open)),
@@ -801,8 +868,20 @@ class Component extends DCLogic {
       fimOn: !!fim.on, fimTitle: fim.title || '', fimText: fim.text || '',
       fimTitlePreview: fim.title || 'Seu título aqui',
       fimTextPreview: fim.text || 'Seu recado aparece sobre a foto.',
-      cats, destaques, chips, infos: INFOS,
+      cats, destaques, chips, infos: s.infos,
       hasLead: destaques.length > 0, lead: destaques[0] || {}, rest: destaques.slice(1),
+
+      adminLabel: s.textos.rodape_admin || 'Área do proprietário',
+      loginLabel: s.entrando ? 'Entrando…' : 'Entrar',
+      carregando: s.carregando, erroCarga: s.erroCarga, temErroCarga: !!s.erroCarga,
+      erroSalvar: s.erroSalvar, temErroSalvar: !!s.erroSalvar,
+      // Cardápio vindo do cache: o cliente precisa saber que pode estar velho.
+      doCache: s.doCache,
+      buscaPlaceholder: s.textos.busca_placeholder || 'Buscar prato, bebida, porção…',
+      destaquesTitulo: s.textos.destaques_titulo || 'Mais pedidos',
+      destaquesSub: s.textos.destaques_sub || 'O que sai mais da cozinha, escolhido pela casa.',
+      heroSupra: s.textos.hero_supra || 'Pesqueiro',
+      heroNome: s.textos.hero_nome || 'Santo Reis',
 
       goAdmin: () => { self.setState({ screen:'admin' }); self.top(); },
       goMenu: () => { self.setState({ screen:'menu' }); self.top(); },
@@ -813,7 +892,7 @@ class Component extends DCLogic {
       onUser: e => self.setState({ user: e.target.value, loginErr: '' }),
       onPass: e => self.setState({ pass: e.target.value, loginErr: '' }),
       doLogin: () => self.authenticate(s.user, s.pass),
-      logout: () => self.setState({ authed:false, user:'', pass:'' }),
+      logout: () => { window.PSR.sair(); self.setState({ authed:false, user:'', pass:'', screen:'menu' }); },
 
       tabs: TABS.map(t => ({ label:t.label, go:() => self.setState({ tab:t.id }) })),
       tabTitle: tabMeta.title, saved: s.saved,
@@ -830,8 +909,11 @@ class Component extends DCLogic {
       addCat: () => {
         const n = s.newCatName.trim();
         if (!n) return;
-        const id = 'sec-' + Date.now();
-        self.save({ cats: (cfg.cats || []).concat([{ id, name:n }]) });
+        // Id legível a partir do nome; o sufixo evita colidir com uma seção
+        // que já exista com o mesmo nome.
+        const base = self.fold(n).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'secao';
+        const id = (base + '-' + Date.now().toString(36).slice(-4)).slice(0, 40);
+        self.criaCategoria(id, n);
         self.setState({ newCatName:'', showNewCat:false, newCat:id });
       },
       hasRemoved: cfg.removed.length > 0,
@@ -843,8 +925,7 @@ class Component extends DCLogic {
       addItem: () => {
         const p = self.parse(s.newPrice);
         if (!s.newName.trim() || p == null) return;
-        const id = 'novo-' + Date.now();
-        self.save({ added: (cfg.added || []).concat([{ id, catId:s.newCat, name:s.newName.trim(), price:p }]) });
+        self.criaItem(s.newCat, s.newName.trim(), p);
         self.setState({ newName:'', newPrice:'' });
       },
 
@@ -857,14 +938,26 @@ class Component extends DCLogic {
       toggleFim: () => self.save({ avisoFim: Object.assign({}, fim, { on: !fim.on }) }),
       onFimTitle: e => self.save({ avisoFim: Object.assign({}, fim, { title: e.target.value }) }),
       onFimText: e => self.save({ avisoFim: Object.assign({}, fim, { text: e.target.value }) }),
-      resetAll: () => { try { window.localStorage.removeItem(KEY); } catch (e) {} self.setState({ cfg: DEFAULTS, saved:true }); }
+      recarregar: () => self.carrega()
     };
   }
 
-  // Placeholder for the real login — swap the body for a server call later.
   authenticate(user, pass) {
     if (!user.trim() || !pass) { this.setState({ loginErr: 'Preencha usuário e senha.' }); return; }
-    this.setState({ authed: true, loginErr: '', pass: '' });
+    this.setState({ entrando: true, loginErr: '' });
+    window.PSR.entrar(user, pass)
+      .then(() => window.PSR.eProprietario())
+      .then(dono => {
+        if (!dono) {
+          // Entrou no Supabase mas não está na lista de donos deste cardápio:
+          // deixar o painel abrir só adiantaria uma tela que não salva nada.
+          return window.PSR.sair().then(() => {
+            this.setState({ entrando: false, loginErr: 'Esta conta não tem acesso ao cardápio.' });
+          });
+        }
+        this.setState({ authed: true, entrando: false, loginErr: '', pass: '' });
+      })
+      .catch(e => this.setState({ entrando: false, loginErr: e.message || 'Não foi possível entrar.' }));
   }
 
   jump(id) {

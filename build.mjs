@@ -55,6 +55,7 @@ console.log(`${refs} referências de mídia apontadas para ${MEDIA_URL}`);
 await writeFile('dist/index.html', html);
 
 await cp('support.js', 'dist/support.js');
+await cp('supabase-cardapio.js', 'dist/supabase-cardapio.js');
 for (const f of DS_FILES) await cp(`${DS_DIR}/${f}`, `dist/${DS_DIR}/${f}`);
 
 console.log('dist/ gerado');
