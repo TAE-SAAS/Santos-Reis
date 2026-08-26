@@ -5,6 +5,7 @@
   "description": "Cardápio online do Pesqueiro Santo Reis",
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "sync:midia": "node sync-r2.mjs"
   }
 }
