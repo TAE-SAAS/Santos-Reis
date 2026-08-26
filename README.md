@@ -14,8 +14,9 @@ cardápio ficam dentro do próprio HTML.
 Cardapio Pesqueiro Santo Reis.dc.html   página (export do editor)
 support.js                              runtime que renderiza as tags <x-dc>
 _ds/organic-.../                        design system: styles.css + bundle
-assets/                                 fotos dos pratos e do pesqueiro
+assets/                                 fotos (fonte; publicadas no R2)
 build.mjs                               monta a pasta dist/
+sync-r2.mjs                             sobe assets/ para o bucket R2
 ```
 
 ## Rodar local
@@ -24,6 +25,20 @@ build.mjs                               monta a pasta dist/
 npm run build
 npx serve dist          # ou: python -m http.server 8788 --directory dist
 ```
+
+## Mídias
+
+As fotos não vão no deploy: ficam no bucket R2 `santos-reis-midia`, servido por
+https://midia.taeerp.com. O build reescreve as referências `assets/` para lá.
+
+Ao trocar ou adicionar uma foto em `assets/`:
+
+```bash
+npm run sync:midia
+```
+
+Os arquivos são servidos com cache de um ano. Para trocar uma imagem existente,
+use um nome de arquivo novo — senão os navegadores continuam mostrando a antiga.
 
 ## Deploy
 
