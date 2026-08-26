@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
 <script src="./supabase-cardapio.js"></script>
+<script src="./scroll-cardapio.js" defer></script>
 </head>
 <body>
 <x-dc>
@@ -12,17 +13,87 @@
 <link rel="stylesheet" href="_ds/organic-1bf0bab7-cb6f-46e0-92eb-f01de88a73fd/styles.css">
 <script src="_ds/organic-1bf0bab7-cb6f-46e0-92eb-f01de88a73fd/_ds_bundle.js"></script>
 <style>
+:root{
+  /* Desaceleração exponencial: entra rápido e assenta. Sem repique. */
+  --psr-saida: cubic-bezier(0.16, 1, 0.3, 1);
+  --psr-suave: cubic-bezier(0.25, 1, 0.5, 1);
+  --psr-barra: 112px;
+}
 html,body{margin:0;background:var(--color-neutral-300);-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth}
 a{color:var(--color-accent);text-decoration:none}
 a:hover{color:var(--color-accent-700)}
-::-webkit-scrollbar{width:0;height:0}
+
+/* A barra de rolagem estava zerada, o que numa lista de 57 itens deixa o
+   cliente sem noção de onde está. Fica fina e na cor da casa. */
+::-webkit-scrollbar{width:10px;height:0}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{
+  background:color-mix(in srgb, var(--color-neutral-900) 22%, transparent);
+  border-radius:999px;border:3px solid var(--color-neutral-300);
+}
+::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb, var(--color-neutral-900) 36%, transparent)}
+html{scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--color-neutral-900) 22%, transparent) transparent}
+
+/* Réguas horizontais (atalhos, abas): sem barra, e o arrasto lateral não
+   dispara o "voltar" do navegador. */
+.psr-regua{overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.psr-regua::-webkit-scrollbar{width:0;height:0}
+
+/* A barra fixa só ganha sombra quando há conteúdo passando por baixo dela. */
+.psr-fixa{transition:box-shadow .28s var(--psr-suave), background-color .28s var(--psr-suave)}
+html.psr-rolou .psr-fixa{box-shadow:0 8px 22px -18px rgba(46,43,37,.75)}
+
+/* Atalho da seção que está sendo lida. O !important é necessário: o editor de
+   design escreve cor e fundo no style inline do botão, e regra de classe perde
+   para inline por especificidade. */
+.psr-atalho{transition:background-color .2s var(--psr-suave), border-color .2s var(--psr-suave), color .2s var(--psr-suave)}
+.psr-atalho[data-ativo]{
+  background:var(--color-accent-200) !important;
+  border-color:var(--color-accent-500) !important;
+  color:var(--color-accent-800) !important;
+}
+
+.psr-foto{will-change:transform}
+
+.psr-social{transition:transform .2s var(--psr-saida), background-color .2s var(--psr-suave)}
+.psr-social:hover{transform:translateY(-1px)}
+
+.psr-subir{
+  position:fixed;bottom:22px;
+  /* Colado na borda direita da coluna do cardápio, não na da janela. */
+  right:calc(50vw - min(231px, 50vw) + 16px);
+  z-index:60;width:46px;height:46px;border-radius:999px;
+  display:grid;place-items:center;cursor:pointer;
+  border:1px solid color-mix(in srgb, var(--color-neutral-900) 14%, transparent);
+  background:color-mix(in srgb, var(--color-neutral-100) 88%, transparent);
+  backdrop-filter:blur(8px);color:var(--color-neutral-800);
+  box-shadow:0 10px 26px -14px rgba(46,43,37,.7);
+  opacity:0;transform:translateY(10px) scale(.94);pointer-events:none;
+  transition:opacity .3s var(--psr-saida), transform .3s var(--psr-saida);
+}
+.psr-subir.psr-visivel{opacity:1;transform:none;pointer-events:auto}
+.psr-subir:hover{background:var(--color-neutral-100);color:var(--color-accent-700)}
+.psr-subir:active{transform:scale(.94)}
+
 @keyframes psrUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes psrGira{to{transform:rotate(360deg)}}
+
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  .psr-foto{transform:none !important}
+  *,*::before,*::after{
+    animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important;
+  }
+  /* Some sem deslizar, em vez de nunca aparecer. */
+  .psr-subir{transform:none}
+}
 </style>
 </helmet>
 
 <div style="min-height:100vh;display:flex;justify-content:center;background:var(--color-neutral-300)">
-<div style="width:100%;max-width:462px;background:var(--color-bg);box-shadow:var(--shadow-lg);min-height:100vh;overflow:hidden;position:relative">
+<div style="width:100%;max-width:462px;background:var(--color-bg);box-shadow:var(--shadow-lg);min-height:100vh;overflow-x:clip;position:relative">
 
 <sc-if value="{{ carregando }}" hint-placeholder-val="{{ false }}">
 <div style="min-height:100vh;display:grid;place-items:center;padding:40px 24px;text-align:center">
@@ -47,7 +118,7 @@ a:hover{color:var(--color-accent-700)}
 <div>
 
   <div style="position:relative;height:312px;overflow:hidden">
-    <img src="assets/up-img3.jpg" alt="Vista aérea do Pesqueiro Santo Reis" class="washed" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+    <img src="assets/up-img3.jpg" alt="Vista aérea do Pesqueiro Santos Reis" data-psr-foto class="washed psr-foto" style="position:absolute;top:-80px;left:0;right:0;width:100%;height:calc(100% + 80px);object-fit:cover">
     <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(32,30,29,.55) 0%,rgba(32,30,29,.1) 34%,rgba(32,30,29,.82) 100%)"></div>
 
     <div style="position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:8px;padding:16px 16px 0">
@@ -75,7 +146,7 @@ a:hover{color:var(--color-accent-700)}
   </div>
   </sc-if>
 
-  <div style="position:sticky;top:0;z-index:30;background:var(--color-bg);box-shadow:0 6px 14px -12px rgba(46,43,37,.5)">
+  <div class="psr-fixa" style="position:sticky;top:0;z-index:30;background:var(--color-bg)">
     <div style="padding:14px 18px 10px;display:flex;gap:8px;align-items:center">
       <div style="position:relative;flex:1">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" style="position:absolute;left:13px;top:10px;color:var(--color-neutral-600)"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
@@ -85,9 +156,9 @@ a:hover{color:var(--color-accent-700)}
       <button type="button" class="btn btn-secondary" onClick="{{ clearSearch }}" style="min-height:42px;flex:none">Limpar</button>
       </sc-if>
     </div>
-    <div style="display:flex;gap:7px;overflow-x:auto;padding:0 18px 12px;scrollbar-width:none">
+    <div class="psr-regua" style="display:flex;gap:7px;padding:0 18px 12px">
       <sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
-      <button type="button" onClick="{{ c.go }}" style="flex:none;border:1px solid var(--color-divider);background:var(--color-neutral-100);color:var(--color-neutral-900);font:700 12.5px/1 var(--font-body);padding:9px 14px;border-radius:999px;cursor:pointer;white-space:nowrap" style-hover="background:var(--color-accent-100);border-color:var(--color-accent-300);color:var(--color-accent-800)">{{ c.name }}</button>
+      <button type="button" class="psr-atalho" data-secao="{{ c.anchor }}" onClick="{{ c.go }}" style="flex:none;border:1px solid var(--color-divider);background:var(--color-neutral-100);color:var(--color-neutral-900);font:700 12.5px/1 var(--font-body);padding:9px 14px;border-radius:999px;cursor:pointer;white-space:nowrap" style-hover="background:var(--color-accent-100);border-color:var(--color-accent-300);color:var(--color-accent-800)">{{ c.name }}</button>
       </sc-for>
     </div>
   </div>
@@ -214,7 +285,7 @@ a:hover{color:var(--color-accent-700)}
 
   <div style="padding:26px 18px 20px">
     <div style="position:relative;border-radius:30px;overflow:hidden">
-      <img src="assets/up-img4.jpg" alt="Ponte de corda com a placa do Pesqueiro Santo Reis" class="washed" style="width:100%;height:196px;object-fit:cover;display:block">
+      <img src="assets/up-img4.jpg" alt="Ponte de corda com a placa do Pesqueiro Santos Reis" class="washed" style="width:100%;height:196px;object-fit:cover;display:block">
       <sc-if value="{{ fimOn }}" hint-placeholder-val="{{ false }}">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(32,30,29,.88) 0%,rgba(32,30,29,.15) 62%,rgba(32,30,29,0) 100%)"></div>
       </sc-if>
@@ -228,10 +299,17 @@ a:hover{color:var(--color-accent-700)}
   </div>
 
   <footer style="padding:6px 18px 40px;text-align:center">
-    <div style="font-family:var(--font-heading);font-size:19px;margin-bottom:4px">Pesqueiro Santo Reis</div>
+    <div style="font-family:var(--font-heading);font-size:19px;margin-bottom:4px">Pesqueiro Santos Reis</div>
     <div style="font:400 12.5px/1.6 var(--font-body);color:var(--color-neutral-700)">{{ hoursLine }}<br>Não cobramos entrada — somente consumação</div>
-    <div style="display:flex;justify-content:center;gap:8px;margin-top:14px">
-      <a class="btn btn-secondary" href="https://www.facebook.com/pesqueirosantosreis" target="_blank" rel="noopener">/pesqueirosantosreis</a>
+    <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:16px">
+      <a class="btn btn-secondary psr-social" href="https://www.instagram.com/santosreispesqueiro/" target="_blank" rel="noopener me" aria-label="Instagram do Pesqueiro Santos Reis">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.4"></rect><circle cx="12" cy="12" r="4.2"></circle><circle cx="17.6" cy="6.4" r="1.25" fill="currentColor" stroke="none"></circle></svg>
+        <span>@santosreispesqueiro</span>
+      </a>
+      <a class="btn btn-secondary psr-social" href="https://www.facebook.com/pesqueirosantosreis/?locale=pt_BR" target="_blank" rel="noopener me" aria-label="Facebook do Pesqueiro Santos Reis">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.52 1.5-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.45 2.91h-2.33V22c4.78-.76 8.44-4.92 8.44-9.94Z"></path></svg>
+        <span>/pesqueirosantosreis</span>
+      </a>
     </div>
     <div style="font:400 11px/1.5 var(--font-body);color:var(--color-neutral-500);margin-top:18px">Preços sujeitos a alteração · atualizado pelo próprio pesqueiro</div>
 
@@ -291,7 +369,7 @@ a:hover{color:var(--color-accent-700)}
 
   <sc-if value="{{ authed }}" hint-placeholder-val="{{ false }}">
   <div>
-    <div style="display:flex;gap:6px;overflow-x:auto;padding:12px 16px;background:var(--color-neutral-200);scrollbar-width:none">
+    <div class="psr-regua" style="display:flex;gap:6px;padding:12px 16px;background:var(--color-neutral-200)">
       <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
       <button type="button" onClick="{{ t.go }}" style="flex:none;border:1px solid var(--color-divider);background:var(--color-neutral-100);color:var(--color-neutral-900);font:700 12.5px/1 var(--font-body);padding:9px 14px;border-radius:999px;cursor:pointer;white-space:nowrap" style-hover="border-color:var(--color-accent-400)">{{ t.label }}</button>
       </sc-for>
@@ -772,8 +850,8 @@ class Component extends DCLogic {
     }).filter(Boolean);
 
     const chips = s.menu.filter(cat => shown.some(it => it.catId === cat.id))
-      .map(cat => ({ name:cat.name, go:() => self.jump('sec-' + cat.id) }))
-      .concat([{ name:'Informações', go:() => self.jump('informacoes') }]);
+      .map(cat => ({ name:cat.name, anchor:'sec-' + cat.id, go:() => self.jump('sec-' + cat.id) }))
+      .concat([{ name:'Informações', anchor:'informacoes', go:() => self.jump('informacoes') }]);
 
     const setPrice = (key, raw) => { const n = self.parse(raw); if (n != null) self.gravaPreco(key, n); };
 
@@ -881,7 +959,7 @@ class Component extends DCLogic {
       destaquesTitulo: s.textos.destaques_titulo || 'Mais pedidos',
       destaquesSub: s.textos.destaques_sub || 'O que sai mais da cozinha, escolhido pela casa.',
       heroSupra: s.textos.hero_supra || 'Pesqueiro',
-      heroNome: s.textos.hero_nome || 'Santo Reis',
+      heroNome: s.textos.hero_nome || 'Santos Reis',
 
       goAdmin: () => { self.setState({ screen:'admin' }); self.top(); },
       goMenu: () => { self.setState({ screen:'menu' }); self.top(); },
@@ -960,11 +1038,13 @@ class Component extends DCLogic {
       .catch(e => this.setState({ entrando: false, loginErr: e.message || 'Não foi possível entrar.' }));
   }
 
+  // scrollIntoView respeita o scroll-margin-top declarado no CSS. A conta
+  // manual que estava aqui usava outro valor (104 contra 112) e parava a seção
+  // oito pixels atrás da barra fixa.
   jump(id) {
     const el = document.getElementById(id);
     if (!el) return;
-    const y = el.getBoundingClientRect().top + (window.scrollY || 0) - 104;
-    window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    el.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   top() { window.scrollTo({ top: 0 }); }
 }

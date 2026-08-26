@@ -1,6 +1,6 @@
-# Cardápio Pesqueiro Santo Reis
+# Cardápio Pesqueiro Santos Reis
 
-Cardápio online do Pesqueiro Santo Reis. Site estático no Cloudflare Pages, com
+Cardápio online do Pesqueiro Santos Reis. Site estático no Cloudflare Pages, com
 cardápio e configuração guardados no Supabase.
 
 **No ar:** https://santos-reis.taeerp.com
@@ -19,6 +19,7 @@ assets/                                 fotos (fonte; publicadas no R2)
 build.mjs                               monta a pasta dist/
 sync-r2.mjs                             sobe assets/ para o bucket R2
 supabase-cardapio.js                    cliente do banco (login + leitura/escrita)
+scroll-cardapio.js                      comportamento de rolagem (fora do componente)
 ```
 
 ## Rodar local
@@ -88,5 +89,11 @@ Não edite `dist/` — ela é gerada e sobrescrita a cada build.
   dono salva no painel vale para todos os visitantes.
 - Se o banco estiver fora do ar, o site mostra a última versão que o visitante
   carregou, com um aviso no rodapé, em vez de uma tela de erro.
+- `scroll-cardapio.js` fica fora do componente de propósito: rolar não muda
+  estado, e o componente redesenha a página inteira a cada `setState`. Com 57
+  itens, ligar a rolagem ao estado travaria o scroll.
+- A coluna do cardápio usa `overflow-x: clip`, não `overflow: hidden`. O
+  `hidden` transforma a coluna em container de rolagem e quebra o
+  `position: sticky` da barra de busca.
 - A pasta `uploads/` (PDF do cardápio e PNGs originais) está no `.gitignore`: nada ali
   é usado pelo site e este repositório é público.

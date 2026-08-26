@@ -16,20 +16,20 @@ const LOCAL_MEDIA = 'assets/';
 // o link compartilhado no WhatsApp vem sem miniatura. Injetamos no build para que
 // isso sobreviva a um novo export do design.
 const HEAD = `
-<title>Cardápio · Pesqueiro Santo Reis</title>
-<meta name="description" content="Cardápio online do Pesqueiro Santo Reis: peixes, porções, almoço e bebidas. Consulte pratos e preços atualizados.">
+<title>Cardápio · Pesqueiro Santos Reis</title>
+<meta name="description" content="Cardápio online do Pesqueiro Santos Reis: peixes, porções, almoço e bebidas. Consulte pratos e preços atualizados.">
 <meta name="theme-color" content="#201e1d">
 <link rel="preconnect" href="${MEDIA_URL.replace(/\/$/, '')}">
 <link rel="icon" href="${MEDIA_URL}menu-logo.png">
 <link rel="apple-touch-icon" href="${MEDIA_URL}menu-logo.png">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Pesqueiro Santo Reis">
+<meta property="og:site_name" content="Pesqueiro Santos Reis">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:title" content="Cardápio · Pesqueiro Santo Reis">
-<meta property="og:description" content="Peixes, porções, almoço e bebidas. Cardápio online do Pesqueiro Santo Reis.">
+<meta property="og:title" content="Cardápio · Pesqueiro Santos Reis">
+<meta property="og:description" content="Peixes, porções, almoço e bebidas. Cardápio online do Pesqueiro Santos Reis.">
 <meta property="og:url" content="${SITE_URL}/">
 <meta property="og:image" content="${MEDIA_URL}up-img3.jpg">
-<meta property="og:image:alt" content="Vista aérea do Pesqueiro Santo Reis">
+<meta property="og:image:alt" content="Vista aérea do Pesqueiro Santos Reis">
 <meta name="twitter:card" content="summary_large_image">
 `.trim();
 
@@ -56,6 +56,7 @@ await writeFile('dist/index.html', html);
 
 await cp('support.js', 'dist/support.js');
 await cp('supabase-cardapio.js', 'dist/supabase-cardapio.js');
+await cp('scroll-cardapio.js', 'dist/scroll-cardapio.js');
 for (const f of DS_FILES) await cp(`${DS_DIR}/${f}`, `dist/${DS_DIR}/${f}`);
 
 console.log('dist/ gerado');
