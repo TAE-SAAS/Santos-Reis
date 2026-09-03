@@ -117,6 +117,11 @@ Não edite `dist/` — ela é gerada e sobrescrita a cada build.
 
 ## Notas
 
+- A miniatura na linha do item é edição à mão no `.dc.html` (o bloco
+  `it.hasPhoto` / `it.photoStyle`). Um novo export do editor de design apaga
+  ela — o editor não conhece esse campo. Se reexportar, refaça: sem isso a
+  foto do prato só aparece em "Mais pedidos" e na bolinha da seção, e todas as
+  outras ficam gravadas no banco sem nunca aparecer na tela.
 - `build.mjs` injeta `<title>` e as tags Open Graph, que o export do editor não traz.
   Por isso a injeção fica no build e não no HTML: ela sobrevive a um novo export.
 - O botão do proprietário fica no rodapé, e o login é o do Supabase Auth. O que o
