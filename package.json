@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "sync:midia": "node sync-r2.mjs"
+    "sync:midia": "node sync-r2.mjs",
+    "atualizar:cardapio": "node atualizar-cardapio.mjs"
   }
 }

@@ -18,6 +18,7 @@ _ds/organic-.../                        design system: styles.css + bundle
 assets/                                 fotos (fonte; publicadas no R2)
 build.mjs                               monta a pasta dist/
 sync-r2.mjs                             sobe assets/ para o bucket R2
+atualizar-cardapio.mjs                  grava no banco o que o painel nao edita
 icon.jpg / gera-icones.py               logo e o script que gera os favicons
 supabase-cardapio.js                    cliente do banco (login + leitura/escrita)
 scroll-cardapio.js                      comportamento de rolagem (fora do componente)
@@ -60,6 +61,26 @@ A chave em `supabase-cardapio.js` é a publicável (anon), feita para ficar no
 navegador. **Nunca** troque pela `service_role`: ela ignora o RLS e este
 repositório é público.
 
+### Mudanças que o painel não faz
+
+O painel do proprietário cobre o dia a dia: preço, meia porção, adicionar e
+tirar item, escolher os "mais pedidos". Não tem campo de **descrição** nem de
+**foto** — essas duas colunas só mudam por gravação direta.
+
+```bash
+npm run atualizar:cardapio
+```
+
+A referência é o cardápio impresso: o menu laminado que está nas mesas
+(fotografado em 27/08/2026), não o PDF de 05/08 — esse é anterior, não tem o
+torresminho e ainda lista porções que saíram.
+
+Ele pede o login do dono na hora (a senha não fica em arquivo), confere que a
+conta está em `proprietarios` antes de tentar gravar, e pula o que já está
+certo — pode rodar de novo sem duplicar nada. Ao ligar uma foto nova, suba o
+arquivo antes com `npm run sync:midia`, senão a URL grava apontando para o
+vazio.
+
 ## Mídias
 
 As fotos não vão no deploy: ficam no bucket R2 `santos-reis-midia`, servido por
@@ -89,7 +110,9 @@ aponta para ícones em outra origem, e o navegador busca esses com CORS.
 Automático: todo push na branch `main` dispara um build no Cloudflare Pages
 (projeto `santos-reis`), que roda `npm run build` e publica `dist/`.
 
-Para alterar o cardápio, edite `Cardapio Pesqueiro Santo Reis.dc.html` e faça push.
+O push publica a **página**, não o cardápio: pratos, preços e fotos vivem no
+Supabase e mudam sem deploy. Edite o HTML para mexer no layout; para mexer no
+cardápio, use o painel do proprietário ou `npm run atualizar:cardapio`.
 Não edite `dist/` — ela é gerada e sobrescrita a cada build.
 
 ## Notas
