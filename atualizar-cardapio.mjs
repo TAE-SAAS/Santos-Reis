@@ -19,33 +19,34 @@
 // pula o que já está certo.
 import { createInterface } from 'node:readline';
 import { stdin, stdout } from 'node:process';
+import { pathToFileURL } from 'node:url';
 
 const BASE = 'https://urnnsxywqvngdbpdovcm.supabase.co';
 const CHAVE = 'sb_publishable_gWcgWUjfTgybL5LEdHWuJw_M3WF7QJj';
 const SCHEMA = 'pesqueiro_santos_reis';
 const DOMINIO = '@santos-reis.taeerp.com';
-const MIDIA = 'https://midia.taeerp.com/';
+export const MIDIA = 'https://midia.taeerp.com/';
 
 // 1. Nomes que o impresso escreve diferente do site.
-const RENOMEAR = [
+export const RENOMEAR = [
   ['lacarte', 'Traíra à Parmegiana', 'Traíra Espalmada à Parmegiana']
 ];
 
 // 2. Itens que faltavam. O torresminho está no impresso (meia 44,90 /
 //    inteira 68,90); o caipicoco veio por mensagem, a 24,00.
-const NOVOS = [
+export const NOVOS = [
   { categoria_id: 'peixe', nome: 'Torresminho de Tilápia', preco: 68.9, preco_meia: 44.9, grupo: null, descricao: null },
   { categoria_id: 'cerveja', nome: 'Caipicoco', preco: 24, preco_meia: null, grupo: 'Drinks', descricao: 'Caipirinha de coco' }
 ];
 
 // 3. Preços que faltavam. O impresso tem meia porção nos dois; o site não.
-const PRECOS = [
+export const PRECOS = [
   ['peixe', 'Ceviche de Tilápia', { preco_meia: 35 }],
   ['peixe', 'Sashimi de Tilápia', { preco_meia: 35 }]
 ];
 
 // 4. Ordem das seções, na sequência do impresso. As outras seções já batem.
-const ORDEM = {
+export const ORDEM = {
   peixe: [
     'Filé de Tilápia', 'Posta de Tilápia', 'Torresminho de Tilápia',
     'Bolinho de Tilápia', 'Bolinho de Camarão', 'Ceviche de Tilápia',
@@ -61,14 +62,14 @@ const ORDEM = {
 //    "batata". A frase das traíras é a que o Lucas mandou, igual nos dois.
 const PORCAO_TRAIRA = 'O prato é servido com uma ou duas traíras, dependendo do tamanho delas.';
 const ACOMPANHA = 'Acompanha arroz, batata frita e salada';
-const DESCRICOES = [
+export const DESCRICOES = [
   ['lacarte', 'Filé de Tilápia Frito', ACOMPANHA],
   ['lacarte', 'Traíra Espalmada Tradicional', `${ACOMPANHA}. ${PORCAO_TRAIRA}`],
   ['lacarte', 'Traíra Espalmada com Catupiry', `${ACOMPANHA}. ${PORCAO_TRAIRA}`]
 ];
 
 // 6. Fotos novas (o arquivo tem que estar no bucket: npm run sync:midia).
-const FOTOS = [
+export const FOTOS = [
   ['peixe', 'Filé de Tilápia', 'menu-file-tilapia-novo.jpg'],
   ['peixe', 'Torresminho de Tilápia', 'menu-torresminho-tilapia.jpg'],
   ['peixe', 'Ceviche de Tilápia', 'menu-ceviche-tilapia.jpg'],
@@ -237,4 +238,8 @@ async function principal() {
   console.log(mudou ? `\n${mudou} alterações gravadas.` : '\nNada a fazer: o cardápio já está igual ao impresso.');
 }
 
-principal().catch((e) => { console.error(`\nFalhou: ${e.message}`); process.exit(1); });
+// So roda quando chamado direto. Importado (pelo conferidor, pelo preview),
+// entrega as listas acima sem tocar no banco.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  principal().catch((e) => { console.error(`\nFalhou: ${e.message}`); process.exit(1); });
+}
