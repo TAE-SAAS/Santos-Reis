@@ -827,9 +827,10 @@ class Component extends DCLogic {
           items: b.items.map(it => ({
             name: it.name, desc: it.desc || '',
             hasPhoto: !!it.photo,
-            // Centrada, e nao na linha de base: numa linha alta (a que tem
-            // tamanhos) a miniatura encostaria no topo.
-            photoStyle: it.photo ? 'width:46px;height:46px;border-radius:999px;flex:none;align-self:center;box-shadow:var(--shadow-sm);background-size:cover;background-position:center;background-image:url(' + it.photo + ')' : '',
+            // Quadrada e arredondada, nao redonda: no tamanho que o Pedro
+            // pediu um circulo cortaria demais o prato. Centrada, e nao na
+            // linha de base, senao encostaria no topo nas linhas altas.
+            photoStyle: it.photo ? 'width:92px;height:92px;border-radius:var(--radius-md);flex:none;align-self:center;box-shadow:var(--shadow-sm);background-size:cover;background-position:center;background-image:url(' + it.photo + ')' : '',
             price: it.price != null ? self.money(it.price) : '',
             half: it.half != null ? self.money(it.half) : '',
             hasVariants: !!it.variants,

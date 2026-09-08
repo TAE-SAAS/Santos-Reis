@@ -83,7 +83,15 @@ export const FOTOS = [
   ['lacarte', 'Traíra Espalmada com Catupiry', 'menu-traira-catupiry.jpg'],
   ['cerveja', 'Soda Italiana', 'menu-soda-italiana.jpg'],
   ['cerveja', 'Caipirinha', 'menu-caipirinha.jpg'],
-  ['cerveja', 'Caipicoco', 'menu-caipicoco.jpg']
+  ['cerveja', 'Caipicoco', 'menu-caipicoco.jpg'],
+  ['domingo', 'Almoço self service', 'menu-almoco-buffet.jpg']
+];
+
+// 7. Foto da seção — vive em `categorias`, não em `itens`. O self service
+//    aparece nos dois lugares (a bolinha do topo e a linha do prato), então
+//    trocar só um deixaria duas fotos diferentes do mesmo almoço.
+export const FOTOS_SECAO = [
+  ['domingo', 'menu-almoco-buffet.jpg']
 ];
 
 let token = null;
@@ -232,6 +240,18 @@ async function principal() {
     await gravar('PATCH', `itens?id=eq.${item.id}`, { foto: url });
     item.foto = url;
     console.log(`~ ${nome}: foto ${arquivo}`);
+    mudou++;
+  }
+
+  // 7. Fotos das seções.
+  const secoes = await ler('categorias?select=id,nome,foto');
+  for (const [id, arquivo] of FOTOS_SECAO) {
+    const secao = secoes.find((c) => c.id === id);
+    if (!secao) { console.log(`! não achei a seção "${id}"`); continue; }
+    const url = MIDIA + arquivo;
+    if (secao.foto === url) { console.log(`= seção ${secao.nome}: foto já ligada`); continue; }
+    await gravar('PATCH', `categorias?id=eq.${secao.id}`, { foto: url });
+    console.log(`~ seção ${secao.nome}: foto ${arquivo}`);
     mudou++;
   }
 
